@@ -1,12 +1,18 @@
 <?php
 require_once 'App/Infrastructure/sdbh.php';
+
 use sdbh\sdbh;
+
 $dbh = new sdbh();
 ?>
 <html>
 <head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
           crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="assets/css/style.css" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
             crossorigin="anonymous"></script>
@@ -30,8 +36,6 @@ $dbh = new sdbh();
                     <select class="form-select" name="product" id="product">
                         <?php foreach ($products as $product) {
                             $name = $product['NAME'];
-                            $price = $product['PRICE'];
-                            $tarif = $product['TARIFF'];
                             ?>
                             <option value="<?= $product['ID']; ?>"><?= $name; ?></option>
                         <?php } ?>
@@ -50,40 +54,83 @@ $dbh = new sdbh();
                     foreach ($services as $k => $s) {
                         ?>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="services[]" value="<?= $s; ?>" id="flexCheck<?= $index; ?>">
+                            <input class="form-check-input" type="checkbox" name="services[]" value="<?= $s; ?>"
+                                   id="flexCheck<?= $index; ?>">
                             <label class="form-check-label" for="flexCheck<?= $index; ?>">
                                 <?= $k ?>: <?= $s ?>
                             </label>
                         </div>
-                    <?php $index++; } ?>
+                        <?php $index++;
+                    } ?>
                 <?php } ?>
 
                 <button type="submit" class="btn btn-primary">Рассчитать</button>
             </form>
-
-            <h5>Итоговая стоимость: <span id="total-price"></span></h5>
+            <h5>Итоговая стоимость: <span id="total-price" data-bs-html="true" data-bs-toggle="tooltip"
+                                          data-bs-placement="top"
+                ></span><span style="display: none;" data-bs-html="true" id="currencyRu"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top"
+                ><i class="ms-1 fa fa-info-circle" aria-hidden="true"></i></span></h5>
         </div>
     </div>
 </div>
 
+<script src="assets/js/script.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
 <script>
-    $(document).ready(function() {
-        $("#form").submit(function(event) {
+    $(document).ready(function () {
+        $("#form").submit(function (event) {
             event.preventDefault();
-
             $.ajax({
                 url: 'App/calculate.php',
                 type: 'POST',
                 data: $(this).serialize(),
-                success: function(response) {
-                    $("#total-price").text(response);
+                dataType: 'json',
+                success: function (response) {
+                    $("#total-price").text(response.totalPrice);
+                    let correctDay = formatEnding(response.days);
+                    let attrTitle = 'Выбрано: ' + response.days + ' ' + correctDay + "<br>" +
+                        'Тариф: ' + response.tariff + ' р/сутки<br>' +
+                        "+" + response.servicePrice + " р/сутки за доп.услуги";
+                    $("#total-price").attr('data-bs-title', attrTitle);
+                    $('#total-price').tooltip('dispose').tooltip();
+
+                    currencyConvert(response.totalPrice);
                 },
-                error: function() {
+                error: function () {
                     $("#total-price").text('Ошибка при расчете');
+                    $("#currencyRu").hide();
                 }
             });
+
         });
+
+        function currencyConvert(currency) {
+            $.getJSON('https://www.cbr-xml-daily.ru/daily_json.js', function (data) {
+                let CNYrate = Number(data.Valute.CNY.Value);
+                let ru = Math.round(currency / CNYrate * 100) / 100;
+                $('#myDiv').toggleClass('redDiv');
+                $("#currencyRu").attr('data-bs-title', ru + '¥');
+                $('#currencyRu').tooltip('dispose').tooltip();
+            })
+            $("#currencyRu").show();
+        }
+
+        function formatEnding(number) {
+            let lastNum = number % 10;
+            let lastTwoNum = number % 100;
+
+            if (lastNum === 1 && lastTwoNum !== 11) {
+                return "день";
+            } else if ([2, 3, 4].includes(lastNum) && ![12, 13, 14].includes(lastTwoNum)) {
+                return 'дня';
+            }
+            return 'дней';
+        }
     });
 </script>
 </body>

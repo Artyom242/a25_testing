@@ -1,5 +1,7 @@
 <?php
-require_once 'App/Domain/Users/UserEntity.php'; use App\Domain\Users\UserEntity;
+require_once 'App/Domain/Users/UserEntity.php';
+
+use App\Domain\Users\UserEntity;
 
 $user = new UserEntity();
 if (!$user->isAdmin) die('Доступ закрыт');
