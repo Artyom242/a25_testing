@@ -92,6 +92,7 @@ $dbh = new sdbh();
                 dataType: 'json',
                 success: function (response) {
                     $("#total-price").text(response.totalPrice);
+                    console.log(response)
                     let correctDay = formatEnding(response.days);
                     let attrTitle = 'Выбрано: ' + response.days + ' ' + correctDay + "<br>" +
                         'Тариф: ' + response.tariff + ' р/сутки<br>' +
@@ -99,7 +100,11 @@ $dbh = new sdbh();
                     $("#total-price").attr('data-bs-title', attrTitle);
                     $('#total-price').tooltip('dispose').tooltip();
 
-                    currencyConvert(response.totalPrice);
+
+                    let currencyPrices = getConvertPrices(response.convertPrices);
+                    $("#currencyRu").show();
+                    $("#currencyRu").attr('data-bs-title', currencyPrices);
+                    $('#currencyRu').tooltip('dispose').tooltip();
                 },
                 error: function () {
                     $("#total-price").text('Ошибка при расчете');
@@ -109,15 +114,14 @@ $dbh = new sdbh();
 
         });
 
-        function currencyConvert(currency) {
-            $.getJSON('https://www.cbr-xml-daily.ru/daily_json.js', function (data) {
-                let CNYrate = Number(data.Valute.CNY.Value);
-                let ru = Math.round(currency / CNYrate * 100) / 100;
-                $('#myDiv').toggleClass('redDiv');
-                $("#currencyRu").attr('data-bs-title', ru + '¥');
-                $('#currencyRu').tooltip('dispose').tooltip();
-            })
-            $("#currencyRu").show();
+        // В будущем доработать подстановку нужной иконки к своей валюте
+        function getConvertPrices(currencies) {
+            let res = '';
+            for (let currency in currencies) {
+                res += currencies[currency] + '¥' + "<br>";
+            }
+
+            return res
         }
 
         function formatEnding(number) {

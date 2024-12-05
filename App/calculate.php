@@ -22,11 +22,14 @@ class Calculate
         $product = $this->dbh->make_query("SELECT * FROM a25_products WHERE ID = $product_id");
 
         if ($product) {
+            $totalPrice = $this->countingTotalPrice($product[0], $days, $selected_services);
+            $currencies = ['CNY'];
             echo json_encode([
                 'days' => $days,
                 'tariff' => $this->getTariff($product[0]['TARIFF'], $days),
                 'servicePrice' => $this->countingServicePrice($selected_services, $days),
-                'totalPrice' => $this->countingTotalPrice($product[0], $days, $selected_services),
+                'totalPrice' => $totalPrice,
+                'convertPrices' => $this->convertCurrency($totalPrice, $currencies),
             ], 200);
         } else {
             echo json_encode([
@@ -35,7 +38,27 @@ class Calculate
         }
     }
 
-    private function countingTotalPrice(array $product, int $days, $selected_services)
+    private function convertCurrency($price, array $currencies): array //Конвертация общей стоимости в другие валюты
+    {
+        $urlCurrency = 'https://www.cbr-xml-daily.ru/daily_json.js';
+        $jsonData = file_get_contents($urlCurrency);
+        $result = [];
+
+        if ($jsonData === false) {
+            die("Ошибка получения курса валют");
+        }
+
+        $data = json_decode($jsonData, true);
+
+        foreach ($currencies as $currency) {
+            $priceCurrency = $data['Valute'][$currency]['Value'];
+            $result[$currency] = round($price / $priceCurrency, 2);
+        }
+
+        return $result;
+    }
+
+    private function countingTotalPrice(array $product, int $days, $selected_services):int // Подсчет все суммы
     {
         $price = $product['PRICE'];
         $tariff = $product['TARIFF'];
@@ -47,7 +70,7 @@ class Calculate
         return $totalPrice;
     }
 
-    private function getTariff($tariff, int $days)
+    private function getTariff($tariff, int $days) // Получаем цену по тарифу
     {
         $newPrice = 0;
 
@@ -62,7 +85,7 @@ class Calculate
         }
 
         return $newPrice;
-    } //Получение тарифа
+    }
 
     private function countingTariffPrice($tariff, int $days, $price): int // Подсчет цены по тарифу
     {
