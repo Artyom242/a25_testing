@@ -27,7 +27,7 @@ class Calculate
             echo json_encode([
                 'days' => $days,
                 'tariff' => $this->getTariff($product[0]['TARIFF'], $days),
-                'servicePrice' => $this->countingServicePrice($selected_services, $days),
+                'servicePrice' => $this->countingServicePrice($selected_services),
                 'totalPrice' => $totalPrice,
                 'convertPrices' => $this->convertCurrency($totalPrice, $currencies),
             ], 200);
@@ -65,7 +65,7 @@ class Calculate
         $totalPrice = 0;
 
         $totalPrice += $this->countingTariffPrice($tariff, $days, $price);
-        $totalPrice += $this->countingServicePrice($selected_services, $days);
+        $totalPrice += $this->countingServicePrice($selected_services) * $days;
 
         return $totalPrice;
     }
@@ -98,12 +98,12 @@ class Calculate
         return $price * $days;
     }
 
-    private function countingServicePrice(array $selected_services, int $days): int // Подсчет дополнительных услуг
+    private function countingServicePrice(array $selected_services): int // Подсчет дополнительных услуг
     {
         $total_price = 0;
 
         foreach ($selected_services as $service) {
-            $total_price += (float)$service * $days;
+            $total_price += $service;
         }
 
         return $total_price;
