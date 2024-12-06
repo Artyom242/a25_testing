@@ -23,7 +23,7 @@ class Calculate
 
         if ($product) {
             $totalPrice = $this->countingTotalPrice($product[0], $days, $selected_services);
-            $currencies = ['CNY'];
+            $currencies = ['CNY']; //Валюты для конвертации
             echo json_encode([
                 'days' => $days,
                 'tariff' => $this->getTariff($product[0]['TARIFF'], $days),
@@ -38,7 +38,7 @@ class Calculate
         }
     }
 
-    private function convertCurrency($price, array $currencies): array //Конвертация общей стоимости в другие валюты
+    private function convertCurrency(int $price, array $currencies): array //Конвертация общей стоимости в другие валюты
     {
         $urlCurrency = 'https://www.cbr-xml-daily.ru/daily_json.js';
         $jsonData = file_get_contents($urlCurrency);
